@@ -47,8 +47,57 @@ function extrude2D(vertices2D, depth, baseColor) {
     };
 }
 
-// Converts any browser font into a pixel-triangulated 2D mesh; no glyph coordinates are hardcoded.
+function addStroke(triangles, x1, y1, x2, y2, width) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.hypot(dx, dy);
+    const offsetX = (dy / length) * width / 2;
+    const offsetY = (dx / length) * width / 2;
+    triangles.push(
+        x1 - offsetX, y1 + offsetY,
+        x2 - offsetX, y2 + offsetY,
+        x1 + offsetX, y1 - offsetY,
+        x1 + offsetX, y1 - offsetY,
+        x2 - offsetX, y2 + offsetY,
+        x2 + offsetX, y2 - offsetY
+    );
+}
+
+// Builds the default USM logo from explicit 2D coordinates before extrusion.
+function usmToTriangles() {
+    const triangles = [];
+    const stroke = 0.16;
+    const top = 0.72;
+    const bottom = -0.72;
+    const letterWidth = 0.74;
+    const gap = 0.18;
+    const start = -((letterWidth * 3) + (gap * 2)) / 2;
+    const x = index => start + index * (letterWidth + gap);
+
+    addStroke(triangles, x(0), top, x(0), bottom + stroke / 2, stroke);
+    addStroke(triangles, x(0), bottom, x(0) + letterWidth, bottom, stroke);
+    addStroke(triangles, x(0) + letterWidth, bottom, x(0) + letterWidth, top, stroke);
+
+    addStroke(triangles, x(1) + letterWidth, top, x(1), top, stroke);
+    addStroke(triangles, x(1), top, x(1), 0, stroke);
+    addStroke(triangles, x(1), 0, x(1) + letterWidth, 0, stroke);
+    addStroke(triangles, x(1) + letterWidth, 0, x(1) + letterWidth, bottom, stroke);
+    addStroke(triangles, x(1) + letterWidth, bottom, x(1), bottom, stroke);
+
+    addStroke(triangles, x(2), bottom, x(2), top, stroke);
+    addStroke(triangles, x(2), top, x(2) + letterWidth / 2, 0.05, stroke);
+    addStroke(triangles, x(2) + letterWidth / 2, 0.05, x(2) + letterWidth, top, stroke);
+    addStroke(triangles, x(2) + letterWidth, top, x(2) + letterWidth, bottom, stroke);
+
+    return new Float32Array(triangles);
+}
+
+// Converts custom text into a pixel-triangulated mesh when the user types a different word.
 function textToTriangles(text, fontSize = 140) {
+    if (text.toUpperCase() === "USM") {
+        return usmToTriangles();
+    }
+
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d", { willReadFrequently: true });
     context.font = `900 ${fontSize}px Arial, sans-serif`;

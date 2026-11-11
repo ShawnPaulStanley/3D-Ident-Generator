@@ -125,7 +125,7 @@ function easeInOut(value) {
 }
 
 function rebuildMesh() {
-    const triangles = textToTriangles(settings.text || "USM");
+    const triangles = textToTriangles((settings.text || "USM").toUpperCase());
     mesh = extrude2D(triangles, settings.depth, hexToRgb(settings.color));
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.positions, gl.STATIC_DRAW);
