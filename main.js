@@ -52,8 +52,34 @@ const colorLocation = gl.getAttribLocation(program, "a_color");
 const matrixLocation = gl.getUniformLocation(program, "u_matrix");
 const positionBuffer = gl.createBuffer();
 const colorBuffer = gl.createBuffer();
+
+const textInput = document.getElementById("textInput");
+const colorInput = document.getElementById("colorInput");
+const depthInput = document.getElementById("depthInput");
+const speedInput = document.getElementById("speedInput");
+const depthValue = document.getElementById("depthValue");
+const speedValue = document.getElementById("speedValue");
+const playButton = document.getElementById("playButton");
+const restartButton = document.getElementById("restartButton");
+
+const settings = {
+    text: textInput.value.trim() || "USM",
+    color: colorInput.value,
+    depth: Number(depthInput.value)
+};
 let mesh = null;
-let settings = { text: "LAG", color: "#00ccff", depth: 0.2 };
+let sequenceTime = 0;
+let lastTime = 0;
+let paused = false;
+let speed = Number(speedInput.value);
+const phases = [
+    { duration: 1.5, startRotation: 0, endRotation: Math.PI, startScale: 1, endScale: 1 },
+    { duration: 1.5, startRotation: Math.PI, endRotation: 0, startScale: 1, endScale: 1 },
+    { duration: 1.5, startRotation: 0, endRotation: -Math.PI, startScale: 1, endScale: 1 },
+    { duration: 1.5, startRotation: -Math.PI, endRotation: 0, startScale: 1, endScale: 1 },
+    { duration: 2.5, startRotation: 0, endRotation: 0, startScale: 1, endScale: 1.8 }
+];
+const sequenceDuration = phases.reduce((total, phase) => total + phase.duration, 0);
 
 function multiply(a, b) {
     const result = new Float32Array(16);
@@ -73,48 +99,33 @@ function rotationX(angle) {
     const c = Math.cos(angle), s = Math.sin(angle);
     return new Float32Array([1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1]);
 }
+
 function rotationY(angle) {
     const c = Math.cos(angle), s = Math.sin(angle);
     return new Float32Array([c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1]);
 }
+
 function rotationZ(angle) {
     const c = Math.cos(angle), s = Math.sin(angle);
     return new Float32Array([c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 }
+
 function scaling(value) {
     return new Float32Array([value, 0, 0, 0, 0, value, 0, 0, 0, 0, value, 0, 0, 0, 0, 1]);
 }
+
 function translation(x, y, z) {
     return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
 }
 
 function easeInOut(value) {
-    return value < 0.5 ? 2 * value * value : 1 - Math.pow(-2 * value + 2, 2) / 2;
+    return value < 0.5
+        ? 2 * value * value
+        : 1 - Math.pow(-2 * value + 2, 2) / 2;
 }
 
-const phases = [
-    { name: "initial", duration: 0.8 },
-    { name: "y", duration: 2.4 },
-    { name: "x", duration: 2.4 },
-    { name: "z", duration: 2.4 },
-    { name: "combined", duration: 3.2 },
-    { name: "tilt", duration: 2.6 },
-    { name: "orbit", duration: 3.2 },
-    { name: "bounce", duration: 2.4 },
-    { name: "return", duration: 2.4 },
-    { name: "scaleUp", duration: 2.2 },
-    { name: "scaleDown", duration: 2.2 }
-];
-let phaseIndex = 0;
-let phaseTime = 0;
-let lastTime = 0;
-let elapsed = 0;
-let paused = false;
-let speed = 1;
-let selectedAnimation = "all";
-
 function rebuildMesh() {
-    const triangles = textToTriangles(settings.text || "LAG");
+    const triangles = textToTriangles(settings.text || "USM");
     mesh = extrude2D(triangles, settings.depth, hexToRgb(settings.color));
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.positions, gl.STATIC_DRAW);
@@ -122,100 +133,38 @@ function rebuildMesh() {
     gl.bufferData(gl.ARRAY_BUFFER, mesh.colors, gl.STATIC_DRAW);
 }
 
-function restart() {
-    phaseIndex = 0;
-    phaseTime = 0;
-    elapsed = 0;
+function resetAnimation() {
+    sequenceTime = 0;
+    lastTime = 0;
     paused = false;
     playButton.textContent = "Pause";
 }
 
-function transitionPhase() {
-    phaseTime -= phases[phaseIndex].duration;
-    phaseIndex = (phaseIndex + 1) % phases.length;
-}
+function getSequenceTransform() {
+    if (sequenceTime >= sequenceDuration) {
+        const movementTime = sequenceTime - sequenceDuration;
+        return {
+            rotation: Math.sin(movementTime * 0.9) * 0.35,
+            scale: 1.8,
+            x: Math.cos(movementTime * 0.7) * 0.08,
+            y: Math.sin(movementTime * 1.1) * 0.08
+        };
+    }
 
-function getActivePhase() {
-    if (selectedAnimation === "all") return phases[phaseIndex];
-    if (selectedAnimation === "scale") {
-        return { name: "scaleLoop", duration: 4.4 };
+    let remaining = sequenceTime;
+    for (const phase of phases) {
+        if (remaining <= phase.duration) {
+            const progress = easeInOut(remaining / phase.duration);
+            return {
+                rotation: phase.startRotation + (phase.endRotation - phase.startRotation) * progress,
+                scale: phase.startScale + (phase.endScale - phase.startScale) * progress,
+                x: 0,
+                y: 0
+            };
+        }
+        remaining -= phase.duration;
     }
-    return { name: selectedAnimation, duration: 2.8 };
-}
-
-function getActiveProgress(activePhase) {
-    return easeInOut(Math.min(phaseTime / activePhase.duration, 1));
-}
-
-function currentRotation() {
-    const activePhase = getActivePhase();
-    const phase = activePhase.name;
-    const progress = getActiveProgress(activePhase);
-    const halfTurn = Math.PI;
-    let x = 0, y = 0, z = 0;
-    const solo = selectedAnimation !== "all";
-    if (phase === "y") y = solo ? Math.PI * 2 * progress : halfTurn * progress;
-    if (phase === "x") {
-        y = solo ? 0 : halfTurn;
-        x = Math.PI * (solo ? 2 : 1) * progress;
-    }
-    if (phase === "z") {
-        y = solo ? 0 : halfTurn;
-        x = solo ? 0 : halfTurn;
-        z = Math.PI * (solo ? 2 : 1) * progress;
-    }
-    if (phase === "combined") {
-        const angle = Math.PI * (solo ? 2 : 1) * progress;
-        x = solo ? angle : halfTurn + angle;
-        y = solo ? angle : halfTurn + angle;
-        z = solo ? angle : halfTurn + angle;
-    }
-    if (phase === "tilt") {
-        x = halfTurn * 2 + Math.sin(progress * Math.PI) * 0.35;
-        y = halfTurn * 2 + Math.sin(progress * Math.PI * 2) * 0.55;
-        z = halfTurn * 2 + Math.sin(progress * Math.PI) * 0.7;
-    }
-    if (phase === "orbit") {
-        x = halfTurn * 2 + Math.sin(progress * Math.PI * 2) * 0.35;
-        y = halfTurn * 2 + progress * Math.PI * 2;
-        z = Math.sin(progress * Math.PI * 2) * 0.25;
-    }
-    if (phase === "bounce") {
-        x = halfTurn * 2;
-        y = halfTurn * 2;
-        z = Math.sin(progress * Math.PI * 4) * 0.16;
-    }
-    if (phase === "return") {
-        x = Math.PI * 2 * (1 - progress);
-        y = Math.PI * 2 * (1 - progress);
-        z = Math.PI * 2 * (1 - progress);
-    }
-    return multiply(rotationZ(z), multiply(rotationY(y), rotationX(x)));
-}
-
-function currentScale() {
-    const activePhase = getActivePhase();
-    const phase = activePhase.name;
-    const progress = getActiveProgress(activePhase);
-    if (phase === "bounce") return 1 + Math.sin(progress * Math.PI * 2) * 0.08;
-    if (phase === "scaleLoop") return 1 + (1 - Math.cos(progress * Math.PI * 2)) * 0.275;
-    if (phase === "scaleUp") return 1 + progress * 0.55;
-    if (phase === "scaleDown") return 1.55 - progress * 0.55;
-    return 1;
-}
-
-function currentTranslation() {
-    const activePhase = getActivePhase();
-    const phase = activePhase.name;
-    const progress = getActiveProgress(activePhase);
-    if (phase === "orbit") {
-        const angle = progress * Math.PI * 2;
-        return translation(Math.cos(angle) * 0.16, Math.sin(angle) * 0.1, 0);
-    }
-    if (phase === "bounce") {
-        return translation(0, Math.sin(progress * Math.PI * 2) * 0.12, 0);
-    }
-    return translation(0, 0, 0);
+    return { rotation: 0, scale: 1, x: 0, y: 0 };
 }
 
 function resize() {
@@ -234,60 +183,45 @@ function draw(time) {
     const delta = lastTime ? Math.min((time - lastTime) / 1000, 0.1) : 0;
     lastTime = time;
     if (!paused) {
-        phaseTime += delta * speed;
-        elapsed += delta;
-        if (selectedAnimation === "all") {
-            if (phaseTime >= phases[phaseIndex].duration) transitionPhase();
-        } else if (phaseTime >= getActivePhase().duration) {
-            phaseTime %= getActivePhase().duration;
-        }
+        sequenceTime += delta * speed;
     }
 
+    const transform = getSequenceTransform();
     const aspect = canvas.width / canvas.height;
     const aspectMatrix = aspect >= 1
         ? scaling(1 / aspect)
         : new Float32Array([1, 0, 0, 0, 0, aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    const matrix = multiply(
-        aspectMatrix,
-        multiply(currentTranslation(), multiply(scaling(currentScale()), currentRotation()))
+    const model = multiply(
+        translation(transform.x, transform.y, 0),
+        multiply(scaling(transform.scale), multiply(rotationY(transform.rotation), rotationX(0)))
     );
+    const matrix = multiply(aspectMatrix, model);
 
     gl.clearColor(0.01, 0.01, 0.015, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    if (mesh) {
-        gl.useProgram(program);
-        gl.uniformMatrix4fv(matrixLocation, false, matrix);
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.enableVertexAttribArray(positionLocation);
-        gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        gl.enableVertexAttribArray(colorLocation);
-        gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.TRIANGLES, 0, mesh.positions.length / 3);
-    }
+    gl.useProgram(program);
+    gl.uniformMatrix4fv(matrixLocation, false, matrix);
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.enableVertexAttribArray(colorLocation);
+    gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, mesh.positions.length / 3);
     requestAnimationFrame(draw);
 }
 
 gl.enable(gl.DEPTH_TEST);
 gl.enable(gl.CULL_FACE);
 
-const textInput = document.getElementById("textInput");
-const animationInput = document.getElementById("animationInput");
-const colorInput = document.getElementById("colorInput");
-const depthInput = document.getElementById("depthInput");
-const speedInput = document.getElementById("speedInput");
-const depthValue = document.getElementById("depthValue");
-const speedValue = document.getElementById("speedValue");
-const playButton = document.getElementById("playButton");
-const restartButton = document.getElementById("restartButton");
-const fullscreenButton = document.getElementById("fullscreenButton");
-
-textInput.addEventListener("change", () => { settings.text = textInput.value.trim() || "LAG"; rebuildMesh(); });
-animationInput.addEventListener("change", () => {
-    selectedAnimation = animationInput.value;
-    restart();
+textInput.addEventListener("input", () => {
+    settings.text = textInput.value.trim() || "USM";
+    rebuildMesh();
 });
-colorInput.addEventListener("input", () => { settings.color = colorInput.value; rebuildMesh(); });
+colorInput.addEventListener("input", () => {
+    settings.color = colorInput.value;
+    rebuildMesh();
+});
 depthInput.addEventListener("input", () => {
     settings.depth = Number(depthInput.value);
     depthValue.value = settings.depth.toFixed(2);
@@ -301,11 +235,7 @@ playButton.addEventListener("click", () => {
     paused = !paused;
     playButton.textContent = paused ? "Play" : "Pause";
 });
-restartButton.addEventListener("click", restart);
-fullscreenButton.addEventListener("click", () => {
-    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-    else document.exitFullscreen();
-});
+restartButton.addEventListener("click", resetAnimation);
 window.addEventListener("resize", resize);
 
 rebuildMesh();
