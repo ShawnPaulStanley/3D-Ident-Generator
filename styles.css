@@ -1,6 +1,10 @@
 :root {
     color-scheme: dark;
     font-family: Inter, system-ui, sans-serif;
+    --purple: #a855f7;
+    --purple-bright: #c084fc;
+    --purple-dark: #241238;
+    --purple-border: #7136a8;
 }
 
 * { box-sizing: border-box; }
@@ -37,16 +41,17 @@ body {
     width: min(94vw, 58rem);
     justify-content: center;
     padding: 1rem;
-    border: 1px solid rgba(255,255,255,.14);
+    border: 1px solid rgba(192, 132, 252, .35);
     border-radius: 0.85rem;
-    background: rgba(15, 20, 28, .82);
+    background: rgba(24, 12, 39, .9);
+    box-shadow: 0 0 1.5rem rgba(168, 85, 247, .16);
     backdrop-filter: blur(12px);
 }
 
 label {
     display: grid;
     gap: .3rem;
-    color: #b6c4d2;
+    color: #d8b4fe;
     font-size: .75rem;
 }
 
@@ -64,7 +69,7 @@ label {
 input[type="text"] {
     width: 8rem;
     padding: .45rem .55rem;
-    border: 1px solid #3c5267;
+    border: 1px solid var(--purple-border);
     border-radius: .35rem;
     background: #101923;
     color: white;
@@ -73,26 +78,29 @@ input[type="text"] {
 select {
     min-width: 9rem;
     padding: .45rem .55rem;
-    border: 1px solid #3c5267;
+    border: 1px solid var(--purple-border);
     border-radius: .35rem;
-    background: #101923;
+    background: #190d28;
     color: white;
 }
 
-input[type="range"] { accent-color: #00c8ff; }
-input[type="color"] { width: 3rem; height: 2rem; padding: 0; border: 0; }
-output { color: #e7f8ff; font-variant-numeric: tabular-nums; }
+input[type="range"] { accent-color: var(--purple); }
+input[type="color"] { width: 3rem; height: 2rem; padding: 0; border: 2px solid var(--purple-bright); }
+output { color: var(--purple-bright); font-variant-numeric: tabular-nums; }
 
 button {
     padding: .55rem .75rem;
-    border: 1px solid #3c5267;
+    border: 1px solid var(--purple-border);
     border-radius: .35rem;
-    background: #172433;
+    background: var(--purple-dark);
     color: #eef7ff;
     cursor: pointer;
 }
 
-button:hover { background: #21364a; }
+button:hover {
+    background: #3b1d5c;
+    border-color: var(--purple-bright);
+}
 .buttons { display: flex; gap: .5rem; }
 
 @media (max-width: 620px) {
