@@ -171,6 +171,30 @@ function extrude2D(vertices2D, depth, baseColor) {
     };
 }
 
+function addRectangleTriangles(triangles, left, bottom, right, top) {
+    triangles.push(
+        left, top, right, top, left, bottom,
+        left, bottom, right, top, right, bottom
+    );
+}
+
+function addSegmentTriangles(triangles, x1, y1, x2, y2, width) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.hypot(dx, dy);
+    const offsetX = (dy / length) * width / 2;
+    const offsetY = (dx / length) * width / 2;
+
+    triangles.push(
+        x1 - offsetX, y1 + offsetY,
+        x2 - offsetX, y2 + offsetY,
+        x1 + offsetX, y1 - offsetY,
+        x1 + offsetX, y1 - offsetY,
+        x2 - offsetX, y2 + offsetY,
+        x2 + offsetX, y2 - offsetY
+    );
+}
+
 function usmToTriangles() {
     const triangles = [];
     const W = 0.76;
@@ -201,44 +225,19 @@ function usmToTriangles() {
     triangles.push(...triangulatePolygon(U));
 
     const sx = X(1);
-    const S = [
-        [sx, top],
-        [sx + W, top],
-        [sx + W, top - T],
-        [sx + T, top - T],
-        [sx + T, T / 2],
-        [sx + W, T / 2],
-        [sx + W, -T / 2],
-        [sx + W - T, -T / 2],
-        [sx + W - T, bottom + T],
-        [sx + W, bottom + T],
-        [sx + W, bottom],
-        [sx, bottom],
-        [sx, -T / 2],
-        [sx + T, -T / 2],
-        [sx + T, T / 2],
-        [sx, T / 2]
-    ];
-    triangles.push(...triangulatePolygon(S));
+    addRectangleTriangles(triangles, sx, top - T, sx + W, top);
+    addRectangleTriangles(triangles, sx, T / 2, sx + T, top - T);
+    addRectangleTriangles(triangles, sx + T, -T / 2, sx + W, T / 2);
+    addRectangleTriangles(triangles, sx + W - T, bottom + T, sx + W, -T / 2);
+    addRectangleTriangles(triangles, sx, bottom, sx + W, bottom + T);
 
     const mx = X(2);
-    const M = [
-        [mx, bottom],
-        [mx + T, bottom],
-        [mx + T, top],
-        [mx + W / 2, bottom + 0.55],
-        [mx + W - T, top],
-        [mx + W - T, bottom],
-        [mx + W, bottom],
-        [mx + W, top - 0.12],
-        [mx + W - 0.12, top],
-        [mx + W - 0.28, top - 0.12],
-        [mx + W / 2, bottom + 0.88],
-        [mx + 0.28, top - 0.12],
-        [mx + 0.12, top],
-        [mx, top - 0.12]
-    ];
-    triangles.push(...triangulatePolygon(M));
+    addRectangleTriangles(triangles, mx, bottom, mx + T, top - 0.08);
+    addRectangleTriangles(triangles, mx + W - T, bottom, mx + W, top - 0.08);
+    addSegmentTriangles(triangles, mx + T / 2, top, mx + W / 2, bottom + 0.55, T);
+    addSegmentTriangles(triangles, mx + W / 2, bottom + 0.55, mx + W - T / 2, top, T);
+    addSegmentTriangles(triangles, mx, top - 0.08, mx + T / 2, top, T);
+    addSegmentTriangles(triangles, mx + W - T / 2, top, mx + W, top - 0.08, T);
 
     return new Float32Array(triangles);
 }
