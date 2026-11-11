@@ -53,7 +53,6 @@ const matrixLocation = gl.getUniformLocation(program, "u_matrix");
 const positionBuffer = gl.createBuffer();
 const colorBuffer = gl.createBuffer();
 
-const textInput = document.getElementById("textInput");
 const animationInput = document.getElementById("animationInput");
 const colorInput = document.getElementById("colorInput");
 const depthInput = document.getElementById("depthInput");
@@ -64,7 +63,6 @@ const playButton = document.getElementById("playButton");
 const restartButton = document.getElementById("restartButton");
 
 const settings = {
-    text: textInput.value.trim() || "USM",
     color: colorInput.value,
     depth: Number(depthInput.value)
 };
@@ -129,7 +127,7 @@ function easeInOut(value) {
 }
 
 function rebuildMesh() {
-    const triangles = textToTriangles((settings.text || "USM").toUpperCase());
+    const triangles = usmToTriangles();
     mesh = extrude2D(triangles, settings.depth, hexToRgb(settings.color));
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.positions, gl.STATIC_DRAW);
@@ -234,10 +232,6 @@ function draw(time) {
 
 gl.enable(gl.DEPTH_TEST);
 
-textInput.addEventListener("input", () => {
-    settings.text = textInput.value.trim() || "USM";
-    rebuildMesh();
-});
 animationInput.addEventListener("change", () => {
     selectedAnimation = animationInput.value;
     resetAnimation();

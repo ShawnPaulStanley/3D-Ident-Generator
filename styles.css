@@ -50,6 +50,17 @@ label {
     font-size: .75rem;
 }
 
+.logo-name {
+    display: grid;
+    place-items: center;
+    min-width: 4rem;
+    height: 2rem;
+    color: #b477ff;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: .18rem;
+}
+
 input[type="text"] {
     width: 8rem;
     padding: .45rem .55rem;
