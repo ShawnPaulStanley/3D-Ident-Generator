@@ -32,6 +32,10 @@ function extrude2D(vertices2D, depth, baseColor) {
     const frontColor = scaleColor(baseColor, 1.0);
     // Darkens the rear face to show depth.
     const backColor = scaleColor(baseColor, 0.62);
+    // Keeps the extrusion walls bright enough to read as part of the logo.
+    const sideColor = scaleColor(baseColor, 0.78);
+    // Tracks shared edges so only outer edges receive side faces.
+    const edges = new Map();
 
     // Appends one triangle and its repeated colour values to the mesh arrays.
     function addTriangle(vertices, color) {
@@ -59,6 +63,11 @@ function extrude2D(vertices2D, depth, baseColor) {
         }
     }
 
+    // Creates a stable string key for matching 2D edge endpoints.
+    function key(x, y) {
+        return `${Math.round(x * 100000)},${Math.round(y * 100000)}`;
+    }
+
     // Reads each group of six values as one 2D triangle.
     for (let i = 0; i < vertices2D.length; i += 6) {
         // Stores the triangle's three 2D points.
@@ -80,9 +89,37 @@ function extrude2D(vertices2D, depth, baseColor) {
             b[0], b[1], -z
         ], backColor);
 
+        // Records each triangle edge so outer walls can be generated.
+        for (const [p, q] of [[a, b], [b, c], [c, a]]) {
+            const kp = key(p[0], p[1]);
+            const kq = key(q[0], q[1]);
+            const edgeKey = kp < kq ? `${kp}|${kq}` : `${kq}|${kp}`;
+            if (!edges.has(edgeKey)) {
+                edges.set(edgeKey, { a: p, b: q, count: 1 });
+            } else {
+                edges.get(edgeKey).count++;
+            }
+        }
     }
 
-    // Returns clean front and back surfaces without internal seam walls.
+    // Adds bright walls around the outside boundary of the logo.
+    for (const edge of edges.values()) {
+        if (edge.count !== 1) continue;
+        const a = edge.a;
+        const b = edge.b;
+        addTriangle([
+            a[0], a[1], z,
+            b[0], b[1], z,
+            a[0], a[1], -z
+        ], sideColor);
+        addTriangle([
+            a[0], a[1], -z,
+            b[0], b[1], z,
+            b[0], b[1], -z
+        ], sideColor);
+    }
+
+    // Returns the complete solid extruded mesh.
     return {
         positions: new Float32Array(positions),
         colors: new Float32Array(colors),
@@ -145,13 +182,13 @@ function usmToTriangles() {
     addSegmentTriangles(triangles, ux, top - 0.1, ux + T / 2, top, T);
     addSegmentTriangles(triangles, ux + W - T / 2, top, ux + W, top - 0.1, T);
 
-    // Builds the S from overlapping bars so its outline remains continuous.
+    // Builds the S from a continuous thick serpentine stroke.
     const sx = X(1);
     const half = T / 2;
     addRectangleTriangles(triangles, sx, top - T, sx + W, top);
-    addRectangleTriangles(triangles, sx + W - T, top - T, sx + W, middle + half);
+    addRectangleTriangles(triangles, sx + W - T, middle, sx + W, top - T);
     addRectangleTriangles(triangles, sx, middle - half, sx + W, middle + half);
-    addRectangleTriangles(triangles, sx, bottom + half, sx + T, middle - half);
+    addRectangleTriangles(triangles, sx, bottom + T, sx + T, middle - half);
     addRectangleTriangles(triangles, sx, bottom, sx + W, bottom + T);
     addSegmentTriangles(triangles, sx, top - T, sx + half, top, T);
     addSegmentTriangles(triangles, sx + W - half, bottom + T, sx + W, bottom + half, T);
