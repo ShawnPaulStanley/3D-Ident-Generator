@@ -1,4 +1,5 @@
 :root {
+    /* Defines the shared dark and purple theme colours. */
     color-scheme: dark;
     font-family: Inter, system-ui, sans-serif;
     --purple: #a855f7;
@@ -9,6 +10,7 @@
 
 * { box-sizing: border-box; }
 
+/* Sets the page background and removes the browser's default body margin. */
 body {
     margin: 0;
     min-width: 320px;
@@ -16,6 +18,7 @@ body {
     color: #eef7ff;
 }
 
+/* Makes the application fill the browser viewport. */
 .app {
     position: relative;
     width: 100vw;
@@ -23,12 +26,14 @@ body {
     overflow: hidden;
 }
 
+/* Makes the WebGL canvas fill the application area. */
 #glCanvas {
     display: block;
     width: 100%;
     height: 100%;
 }
 
+/* Styles the centered overlay panel containing the controls. */
 .controls {
     position: absolute;
     left: 50%;
@@ -48,6 +53,7 @@ body {
     backdrop-filter: blur(12px);
 }
 
+/* Arranges each control label and its input vertically. */
 label {
     display: grid;
     gap: .3rem;
@@ -55,6 +61,7 @@ label {
     font-size: .75rem;
 }
 
+/* Styles the fixed USM name shown in the control panel. */
 .logo-name {
     display: grid;
     place-items: center;
@@ -66,6 +73,7 @@ label {
     letter-spacing: .18rem;
 }
 
+/* Keeps the text-input styling available for future controls. */
 input[type="text"] {
     width: 8rem;
     padding: .45rem .55rem;
@@ -75,6 +83,7 @@ input[type="text"] {
     color: white;
 }
 
+/* Styles the animation phase dropdown. */
 select {
     min-width: 9rem;
     padding: .45rem .55rem;
@@ -84,10 +93,14 @@ select {
     color: white;
 }
 
+/* Applies the purple accent to range controls. */
 input[type="range"] { accent-color: var(--purple); }
+/* Styles the colour picker with a purple border. */
 input[type="color"] { width: 3rem; height: 2rem; padding: 0; border: 2px solid var(--purple-bright); }
+/* Styles numeric output values shown beneath sliders. */
 output { color: var(--purple-bright); font-variant-numeric: tabular-nums; }
 
+/* Styles the playback buttons. */
 button {
     padding: .55rem .75rem;
     border: 1px solid var(--purple-border);
@@ -97,12 +110,15 @@ button {
     cursor: pointer;
 }
 
+/* Brightens buttons when the pointer is over them. */
 button:hover {
     background: #3b1d5c;
     border-color: var(--purple-bright);
 }
+/* Places the playback buttons beside each other. */
 .buttons { display: flex; gap: .5rem; }
 
+/* Adjusts the panel and buttons for narrow screens. */
 @media (max-width: 620px) {
     .controls {
         left: .65rem;

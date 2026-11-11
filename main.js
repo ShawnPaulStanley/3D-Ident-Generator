@@ -1,10 +1,14 @@
+// Finds the canvas used for WebGL drawing.
 const canvas = document.getElementById("glCanvas");
+// Creates a WebGL context with anti-aliasing enabled.
 const gl = canvas.getContext("webgl", { antialias: true });
 
+// Stops execution when the browser cannot create WebGL.
 if (!gl) {
     throw new Error("WebGL is not supported in this browser.");
 }
 
+// Transforms vertex positions using the animation matrix.
 const vertexShaderSource = `
     attribute vec3 a_position;
     attribute vec4 a_color;
@@ -15,6 +19,7 @@ const vertexShaderSource = `
         v_color = a_color;
     }
 `;
+// Outputs the interpolated colour for each rendered fragment.
 const fragmentShaderSource = `
     precision mediump float;
     varying vec4 v_color;
@@ -23,6 +28,7 @@ const fragmentShaderSource = `
     }
 `;
 
+// Compiles one WebGL shader and reports compiler errors.
 function createShader(type, source) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
@@ -35,6 +41,7 @@ function createShader(type, source) {
     return shader;
 }
 
+// Links the vertex and fragment shaders into one WebGL program.
 function createProgram() {
     const program = gl.createProgram();
     gl.attachShader(program, createShader(gl.VERTEX_SHADER, vertexShaderSource));
@@ -46,32 +53,54 @@ function createProgram() {
     return program;
 }
 
+// Creates the shader program used for every frame.
 const program = createProgram();
+// Finds the vertex-position attribute in the shader.
 const positionLocation = gl.getAttribLocation(program, "a_position");
+// Finds the vertex-colour attribute in the shader.
 const colorLocation = gl.getAttribLocation(program, "a_color");
+// Finds the transformation-matrix uniform in the shader.
 const matrixLocation = gl.getUniformLocation(program, "u_matrix");
+// Creates the GPU buffer containing vertex positions.
 const positionBuffer = gl.createBuffer();
+// Creates the GPU buffer containing vertex colours.
 const colorBuffer = gl.createBuffer();
 
+// Gets the animation dropdown element.
 const animationInput = document.getElementById("animationInput");
+// Gets the colour picker element.
 const colorInput = document.getElementById("colorInput");
+// Gets the extrusion-depth slider.
 const depthInput = document.getElementById("depthInput");
+// Gets the animation-speed slider.
 const speedInput = document.getElementById("speedInput");
+// Gets the displayed depth value.
 const depthValue = document.getElementById("depthValue");
+// Gets the displayed speed value.
 const speedValue = document.getElementById("speedValue");
+// Gets the play/pause button.
 const playButton = document.getElementById("playButton");
+// Gets the reset button.
 const restartButton = document.getElementById("restartButton");
 
+// Stores appearance values used to rebuild the USM mesh.
 const settings = {
     color: colorInput.value,
     depth: Number(depthInput.value)
 };
+// Holds the current GPU-ready logo mesh.
 let mesh = null;
+// Tracks elapsed time in the selected animation timeline.
 let sequenceTime = 0;
+// Stores the previous frame timestamp for delta-time calculation.
 let lastTime = 0;
+// Indicates whether animation time is currently stopped.
 let paused = false;
+// Stores the user-selected animation speed multiplier.
 let speed = Number(speedInput.value);
+// Stores the selected animation mode.
 let selectedAnimation = "all";
+// Defines the required animation phases and their transforms.
 const phases = [
     { name: "right", duration: 1.5, startRotation: 0, endRotation: Math.PI, startScale: 1, endScale: 1 },
     { name: "rightReturn", duration: 1.5, startRotation: Math.PI, endRotation: 0, startScale: 1, endScale: 1 },
@@ -81,8 +110,10 @@ const phases = [
     { name: "scaleDown", duration: 2.5, startRotation: 0, endRotation: 0, startScale: 1.8, endScale: 1.15 },
     { name: "move", duration: 2 * Math.PI / 0.8, startRotation: 0, endRotation: 0, startScale: 1.15, endScale: 1.15 }
 ];
+// Calculates the full duration of one main-sequence cycle.
 const sequenceDuration = phases.reduce((total, phase) => total + phase.duration, 0);
 
+// Multiplies two column-major 4x4 transformation matrices.
 function multiply(a, b) {
     const result = new Float32Array(16);
     for (let column = 0; column < 4; column++) {
@@ -97,37 +128,46 @@ function multiply(a, b) {
     return result;
 }
 
+// Creates a rotation matrix around the x-axis.
 function rotationX(angle) {
     const c = Math.cos(angle), s = Math.sin(angle);
     return new Float32Array([1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1]);
 }
 
+// Creates a rotation matrix around the y-axis.
 function rotationY(angle) {
     const c = Math.cos(angle), s = Math.sin(angle);
     return new Float32Array([c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1]);
 }
 
+// Creates a rotation matrix around the z-axis.
 function rotationZ(angle) {
     const c = Math.cos(angle), s = Math.sin(angle);
     return new Float32Array([c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 }
 
+// Creates a uniform scale matrix.
 function scaling(value) {
     return new Float32Array([value, 0, 0, 0, 0, value, 0, 0, 0, 0, value, 0, 0, 0, 0, 1]);
 }
 
+// Creates a translation matrix.
 function translation(x, y, z) {
     return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
 }
 
+// Smooths movement so animation starts and ends gently.
 function easeInOut(value) {
     return value < 0.5
         ? 2 * value * value
         : 1 - Math.pow(-2 * value + 2, 2) / 2;
 }
 
+// Rebuilds the hardcoded USM geometry after a visual setting changes.
 function rebuildMesh() {
+    // Generates the 2D coordinate triangles for USM.
     const triangles = usmToTriangles();
+    // Extrudes the 2D triangles into a coloured 3D mesh.
     mesh = extrude2D(triangles, settings.depth, hexToRgb(settings.color));
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.positions, gl.STATIC_DRAW);
@@ -135,6 +175,7 @@ function rebuildMesh() {
     gl.bufferData(gl.ARRAY_BUFFER, mesh.colors, gl.STATIC_DRAW);
 }
 
+// Returns the animation to its initial playable state.
 function resetAnimation() {
     sequenceTime = 0;
     lastTime = 0;
@@ -142,6 +183,7 @@ function resetAnimation() {
     playButton.textContent = "Pause";
 }
 
+// Interpolates rotation and scale within one animation phase.
 function interpolatePhase(phase, time) {
     const progress = easeInOut(Math.min(time / phase.duration, 1));
     return {
@@ -152,6 +194,7 @@ function interpolatePhase(phase, time) {
     };
 }
 
+// Calculates the gentle continuous movement after the sequence.
 function getMovementTransform(time) {
     return {
         rotation: time * 0.8,
@@ -162,6 +205,7 @@ function getMovementTransform(time) {
     };
 }
 
+// Chooses the transform for the selected phase or complete sequence.
 function getSequenceTransform() {
     if (selectedAnimation === "move") {
         return getMovementTransform(sequenceTime);
@@ -186,6 +230,7 @@ function getSequenceTransform() {
     return { rotation: 0, scale: 1, x: 0, y: 0 };
 }
 
+// Matches the canvas drawing buffer to its displayed size and pixel density.
 function resize() {
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     const width = Math.floor(canvas.clientWidth * pixelRatio);
@@ -197,7 +242,9 @@ function resize() {
     gl.viewport(0, 0, canvas.width, canvas.height);
 }
 
+// Draws one animation frame and requests the next frame.
 function draw(time) {
+    // Updates the canvas dimensions before drawing.
     resize();
     const delta = lastTime ? Math.min((time - lastTime) / 1000, 0.1) : 0;
     lastTime = time;
@@ -230,31 +277,57 @@ function draw(time) {
     requestAnimationFrame(draw);
 }
 
+// Enables hidden-surface removal for the 3D mesh.
 gl.enable(gl.DEPTH_TEST);
 
+// Restarts when the user chooses a different animation mode.
 animationInput.addEventListener("change", () => {
     selectedAnimation = animationInput.value;
     resetAnimation();
 });
+// Rebuilds the mesh when the logo colour changes.
 colorInput.addEventListener("input", () => {
     settings.color = colorInput.value;
     rebuildMesh();
 });
+// Rebuilds the mesh when extrusion depth changes.
 depthInput.addEventListener("input", () => {
     settings.depth = Number(depthInput.value);
     depthValue.value = settings.depth.toFixed(2);
     rebuildMesh();
 });
+// Updates the animation speed when the slider changes.
 speedInput.addEventListener("input", () => {
     speed = Number(speedInput.value);
     speedValue.value = `${speed.toFixed(2)}x`;
 });
+// Toggles playback between paused and running states.
 playButton.addEventListener("click", () => {
     paused = !paused;
     playButton.textContent = paused ? "Play" : "Pause";
 });
+// Resets the animation when the reset button is pressed.
 restartButton.addEventListener("click", resetAnimation);
+// Recalculates the viewport whenever the browser is resized.
 window.addEventListener("resize", resize);
 
+// Creates the initial mesh before the first frame.
 rebuildMesh();
+// Starts the browser's animation loop.
 requestAnimationFrame(draw);
+    // Uploads the position data to the GPU.
+    // Uploads the colour data to the GPU.
+        // Runs the movement phase independently from the main sequence.
+        // Loops the selected individual phase.
+    // Wraps time so the main sequence repeats continuously.
+    // Finds the phase containing the current cycle time.
+    // Calculates elapsed seconds since the previous frame.
+    // Advances time only when playback is not paused.
+    // Gets the current rotation, scale, and translation.
+    // Corrects the model for the canvas aspect ratio.
+    // Builds the final transformation matrix.
+    // Clears the previous frame.
+    // Selects the shader program and transformation matrix.
+    // Binds position data to the vertex shader.
+    // Binds colour data to the vertex shader.
+    // Draws every triangle in the extruded logo.
