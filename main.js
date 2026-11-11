@@ -12,11 +12,15 @@ if (!gl) {
 const vertexShaderSource = `
     attribute vec3 a_position;
     attribute vec4 a_color;
+    attribute vec3 a_normal;
     uniform mat4 u_matrix;
+    uniform vec3 u_lightDirection;
     varying vec4 v_color;
     void main() {
         gl_Position = u_matrix * vec4(a_position, 1.0);
-        v_color = a_color;
+        float diffuse = max(dot(normalize(a_normal), normalize(u_lightDirection)), 0.0);
+        float lighting = 0.32 + diffuse * 0.68;
+        v_color = vec4(a_color.rgb * lighting, a_color.a);
     }
 `;
 // Outputs the interpolated colour for each rendered fragment.
@@ -61,10 +65,16 @@ const positionLocation = gl.getAttribLocation(program, "a_position");
 const colorLocation = gl.getAttribLocation(program, "a_color");
 // Finds the transformation-matrix uniform in the shader.
 const matrixLocation = gl.getUniformLocation(program, "u_matrix");
+// Finds the directional-light uniform in the shader.
+const lightDirectionLocation = gl.getUniformLocation(program, "u_lightDirection");
+// Finds the per-face normal attribute in the shader.
+const normalLocation = gl.getAttribLocation(program, "a_normal");
 // Creates the GPU buffer containing vertex positions.
 const positionBuffer = gl.createBuffer();
 // Creates the GPU buffer containing vertex colours.
 const colorBuffer = gl.createBuffer();
+// Creates the GPU buffer containing vertex normals.
+const normalBuffer = gl.createBuffer();
 
 // Gets the animation dropdown element.
 const animationInput = document.getElementById("animationInput");
@@ -174,6 +184,8 @@ function rebuildMesh() {
     gl.bufferData(gl.ARRAY_BUFFER, mesh.positions, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.colors, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.normals, gl.STATIC_DRAW);
 }
 
 // Returns the animation to its initial playable state.
@@ -287,12 +299,16 @@ function draw(time) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(program);
     gl.uniformMatrix4fv(matrixLocation, false, matrix);
+    gl.uniform3f(lightDirectionLocation, -0.45, 0.7, 1.0);
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
     gl.enableVertexAttribArray(colorLocation);
     gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.enableVertexAttribArray(normalLocation);
+    gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.TRIANGLES, 0, mesh.positions.length / 3);
     requestAnimationFrame(draw);
 }

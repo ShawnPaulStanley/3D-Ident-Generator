@@ -26,6 +26,8 @@ function extrude2D(vertices2D, depth, baseColor) {
     const positions = [];
     // Stores one RGBA colour for every generated vertex.
     const colors = [];
+    // Stores one face normal for every generated vertex.
+    const normals = [];
     // Uses the brightest colour for the front face.
     const frontColor = scaleColor(baseColor, 1.0);
     // Darkens the rear face to show depth.
@@ -39,6 +41,26 @@ function extrude2D(vertices2D, depth, baseColor) {
     function addTriangle(vertices, color) {
         positions.push(...vertices);
         for (let i = 0; i < 3; i++) colors.push(...color);
+
+        const ab = [
+            vertices[3] - vertices[0],
+            vertices[4] - vertices[1],
+            vertices[5] - vertices[2]
+        ];
+        const ac = [
+            vertices[6] - vertices[0],
+            vertices[7] - vertices[1],
+            vertices[8] - vertices[2]
+        ];
+        const normal = [
+            ab[1] * ac[2] - ab[2] * ac[1],
+            ab[2] * ac[0] - ab[0] * ac[2],
+            ab[0] * ac[1] - ab[1] * ac[0]
+        ];
+        const length = Math.hypot(normal[0], normal[1], normal[2]) || 1;
+        for (let i = 0; i < 3; i++) {
+            normals.push(normal[0] / length, normal[1] / length, normal[2] / length);
+        }
     }
 
     // Creates a stable string key for matching nearby 2D edge endpoints.
@@ -104,7 +126,8 @@ function extrude2D(vertices2D, depth, baseColor) {
     // Returns typed arrays suitable for WebGL buffer uploads.
     return {
         positions: new Float32Array(positions),
-        colors: new Float32Array(colors)
+        colors: new Float32Array(colors),
+        normals: new Float32Array(normals)
     };
 }
 
