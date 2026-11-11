@@ -80,8 +80,8 @@ const phases = [
     { name: "left", duration: 1.5, startRotation: 0, endRotation: -Math.PI, startScale: 1, endScale: 1 },
     { name: "leftReturn", duration: 1.5, startRotation: -Math.PI, endRotation: 0, startScale: 1, endScale: 1 },
     { name: "scale", duration: 2.5, startRotation: 0, endRotation: 0, startScale: 1, endScale: 1.8 },
-    { name: "move", duration: 2 * Math.PI / 0.8, startRotation: 0, endRotation: 0, startScale: 1.8, endScale: 1.8 },
-    { name: "scaleDown", duration: 2.5, startRotation: 2 * Math.PI, endRotation: 2 * Math.PI, startScale: 1.8, endScale: 1 }
+    { name: "scaleDown", duration: 2.5, startRotation: 0, endRotation: 0, startScale: 1.8, endScale: 1.15 },
+    { name: "move", duration: 2 * Math.PI / 0.8, startRotation: 0, endRotation: 0, startScale: 1.15, endScale: 1.15 }
 ];
 const sequenceDuration = phases.reduce((total, phase) => total + phase.duration, 0);
 
@@ -158,9 +158,9 @@ function getMovementTransform(time) {
     return {
         rotation: time * 0.8,
         rotationX: Math.sin(time * 0.4) * 0.25,
-        scale: 1.8,
-        x: Math.cos(time * 0.8) * 0.1,
-        y: Math.sin(time * 0.8) * 0.08
+        scale: 1.15,
+        x: Math.cos(time * 0.8) * 0.07,
+        y: Math.sin(time * 0.8) * 0.05
     };
 }
 
