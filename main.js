@@ -11,7 +11,7 @@ if (!gl) {
 // Keeps the single key light fixed above and to the left of the logo.
 const LIGHT_DIRECTION = [-0.8, 0.45, 1.0];
 
-// Transforms vertex positions using the animation matrix.
+// Transforms each vertex and passes its world position and normal to the fragment shader.
 const vertexShaderSource = `
     attribute vec3 a_position;
     attribute vec4 a_color;
@@ -29,7 +29,7 @@ const vertexShaderSource = `
         v_color = a_color;
     }
 `;
-// Outputs the interpolated colour for each rendered fragment.
+// Applies one-sided diffuse and glossy specular lighting to each rendered fragment.
 const fragmentShaderSource = `
     precision mediump float;
     varying vec4 v_color;
@@ -86,7 +86,7 @@ const matrixLocation = gl.getUniformLocation(program, "u_matrix");
 const modelLocation = gl.getUniformLocation(program, "u_model");
 // Finds the directional-light uniform in the shader.
 const lightDirectionLocation = gl.getUniformLocation(program, "u_lightDirection");
-// Finds the per-face normal attribute in the shader.
+// Finds the per-vertex face-normal attribute used for lighting.
 const normalLocation = gl.getAttribLocation(program, "a_normal");
 // Creates the GPU buffer containing vertex positions.
 const positionBuffer = gl.createBuffer();
@@ -293,7 +293,7 @@ function resize() {
     gl.viewport(0, 0, canvas.width, canvas.height);
 }
 
-// Draws one animation frame and requests the next frame.
+// Updates animation state, uploads transforms, and draws one frame.
 function draw(time) {
     // Updates the canvas dimensions before drawing.
     resize();
@@ -338,7 +338,7 @@ function draw(time) {
     requestAnimationFrame(draw);
 }
 
-// Enables hidden-surface removal for the 3D mesh.
+// Enables hidden-surface removal so nearer faces cover farther faces.
 gl.enable(gl.DEPTH_TEST);
 
 // Restarts when the user chooses a different animation mode.
@@ -376,19 +376,3 @@ window.addEventListener("resize", resize);
 rebuildMesh();
 // Starts the browser's animation loop.
 requestAnimationFrame(draw);
-    // Uploads the position data to the GPU.
-    // Uploads the colour data to the GPU.
-        // Runs the movement phase independently from the main sequence.
-        // Loops the selected individual phase.
-    // Wraps time so the main sequence repeats continuously.
-    // Finds the phase containing the current cycle time.
-    // Calculates elapsed seconds since the previous frame.
-    // Advances time only when playback is not paused.
-    // Gets the current rotation, scale, and translation.
-    // Corrects the model for the canvas aspect ratio.
-    // Builds the final transformation matrix.
-    // Clears the previous frame.
-    // Selects the shader program and transformation matrix.
-    // Binds position data to the vertex shader.
-    // Binds colour data to the vertex shader.
-    // Draws every triangle in the extruded logo.

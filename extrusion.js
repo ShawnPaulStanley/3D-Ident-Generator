@@ -8,7 +8,7 @@ function hexToRgb(hex) {
     ];
 }
 
-// Creates a shaded RGBA colour by multiplying an RGB colour by a brightness amount.
+// Creates an RGBA base colour with an optional baked brightness adjustment.
 function scaleColor(color, amount) {
     return [
         color[0] * amount,
@@ -26,7 +26,7 @@ function extrude2D(vertices2D, depth, baseColor) {
     const positions = [];
     // Stores one RGBA colour for every generated vertex.
     const colors = [];
-    // Stores one face normal for every generated vertex.
+    // Stores the calculated triangle normal once for each of its three vertices.
     const normals = [];
     // Uses the brightest colour for the front face.
     const frontColor = scaleColor(baseColor, 1.0);
