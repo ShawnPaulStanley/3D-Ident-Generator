@@ -133,13 +133,13 @@ function usmToTriangles() {
 
     const sx = X(1);
     const half = T / 2;
-    addSegmentTriangles(triangles, sx + half, top - half, sx + W - half, top - half, T);
-    addSegmentTriangles(triangles, sx + half, top - half, sx + half, middle + 0.1, T);
-    addSegmentTriangles(triangles, sx + half, middle, sx + W - half, middle, T);
-    addSegmentTriangles(triangles, sx + W - half, middle - 0.1, sx + W - half, bottom + half, T);
-    addSegmentTriangles(triangles, sx + W - half, bottom + half, sx + half, bottom + half, T);
-    addSegmentTriangles(triangles, sx + half, top - half, sx + T, top, T);
-    addSegmentTriangles(triangles, sx + W - T, bottom, sx + W - half, bottom + half, T);
+    addRectangleTriangles(triangles, sx + half, top - T, sx + W - half, top);
+    addRectangleTriangles(triangles, sx, top - T, sx + T, middle + half);
+    addRectangleTriangles(triangles, sx + half, middle - half, sx + W - half, middle + half);
+    addRectangleTriangles(triangles, sx + W - T, bottom + half, sx + W, middle + half);
+    addRectangleTriangles(triangles, sx + half, bottom, sx + W - half, bottom + T);
+    addSegmentTriangles(triangles, sx, top - T, sx + half, top, T);
+    addSegmentTriangles(triangles, sx + W - half, bottom + T, sx + W, bottom + half, T);
 
     const mx = X(2);
     addRectangleTriangles(triangles, mx, bottom, mx + T, top - 0.08);
