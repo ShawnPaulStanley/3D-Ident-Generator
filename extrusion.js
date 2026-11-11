@@ -63,39 +63,45 @@ function addStroke(triangles, x1, y1, x2, y2, width) {
     );
 }
 
+function addBar(triangles, left, bottom, right, top) {
+    triangles.push(
+        left, top, right, top, left, bottom,
+        left, bottom, right, top, right, bottom
+    );
+}
+
 // Builds the default USM logo from explicit 2D coordinates before extrusion.
 function usmToTriangles() {
     const triangles = [];
-    const stroke = 0.14;
-    const top = 0.68;
-    const bottom = -0.68;
-    const letterWidth = 0.66;
-    const gap = 0.22;
+    const stroke = 0.16;
+    const top = 0.72;
+    const bottom = -0.72;
+    const middle = 0;
+    const letterWidth = 0.68;
+    const gap = 0.24;
     const start = -((letterWidth * 3) + (gap * 2)) / 2;
     const x = index => start + index * (letterWidth + gap);
-    const mTop = top + 0.1;
-    const mBottom = bottom - 0.1;
 
-    addStroke(triangles, x(0), top - 0.1, x(0), bottom, stroke);
-    addStroke(triangles, x(0), top - 0.1, x(0) + 0.1, top, stroke);
-    addStroke(triangles, x(0), bottom, x(0) + letterWidth, bottom, stroke);
-    addStroke(triangles, x(0) + letterWidth, bottom, x(0) + letterWidth, top - 0.1, stroke);
-    addStroke(triangles, x(0) + letterWidth - 0.1, top, x(0) + letterWidth, top - 0.1, stroke);
+    const half = stroke / 2;
 
-    addStroke(triangles, x(1) + letterWidth, top, x(1) + 0.1, top, stroke);
-    addStroke(triangles, x(1) + 0.1, top, x(1), top - 0.1, stroke);
-    addStroke(triangles, x(1), top - 0.1, x(1), 0.1, stroke);
-    addStroke(triangles, x(1), 0.1, x(1) + 0.1, 0, stroke);
-    addStroke(triangles, x(1) + 0.1, 0, x(1) + letterWidth - 0.1, 0, stroke);
-    addStroke(triangles, x(1) + letterWidth - 0.1, 0, x(1) + letterWidth, -0.1, stroke);
-    addStroke(triangles, x(1) + letterWidth, -0.1, x(1) + letterWidth, bottom + 0.1, stroke);
-    addStroke(triangles, x(1) + letterWidth, bottom + 0.1, x(1) + letterWidth - 0.1, bottom, stroke);
-    addStroke(triangles, x(1) + letterWidth - 0.1, bottom, x(1), bottom, stroke);
+    addBar(triangles, x(0), bottom, x(0) + stroke, top - half);
+    addBar(triangles, x(0) + letterWidth - stroke, bottom, x(0) + letterWidth, top - half);
+    addBar(triangles, x(0) + half, bottom, x(0) + letterWidth - half, bottom + stroke);
+    addStroke(triangles, x(0), top - half, x(0) + half, top, stroke);
+    addStroke(triangles, x(0) + letterWidth - half, top, x(0) + letterWidth, top - half, stroke);
 
-    addStroke(triangles, x(2), mBottom, x(2), mTop, stroke);
-    addStroke(triangles, x(2), mTop, x(2) + letterWidth / 2, 0.05, stroke);
-    addStroke(triangles, x(2) + letterWidth / 2, 0.05, x(2) + letterWidth, mTop, stroke);
-    addStroke(triangles, x(2) + letterWidth, mTop, x(2) + letterWidth, mBottom, stroke);
+    addBar(triangles, x(1) + half, top - stroke, x(1) + letterWidth - half, top);
+    addBar(triangles, x(1), top - half, x(1) + stroke, middle + half);
+    addBar(triangles, x(1) + half, middle - half, x(1) + letterWidth - half, middle + half);
+    addBar(triangles, x(1) + letterWidth - stroke, middle - half, x(1) + letterWidth, bottom + half);
+    addBar(triangles, x(1) + half, bottom, x(1) + letterWidth - half, bottom + stroke);
+    addStroke(triangles, x(1), top - half, x(1) + half, top - stroke, stroke);
+    addStroke(triangles, x(1) + letterWidth - half, bottom + stroke, x(1) + letterWidth, bottom + half, stroke);
+
+    addBar(triangles, x(2), bottom, x(2) + stroke, top - half);
+    addBar(triangles, x(2) + letterWidth - stroke, bottom, x(2) + letterWidth, top - half);
+    addStroke(triangles, x(2) + half, top, x(2) + letterWidth / 2, middle + 0.08, stroke);
+    addStroke(triangles, x(2) + letterWidth / 2, middle + 0.08, x(2) + letterWidth - half, top, stroke);
 
     return new Float32Array(triangles);
 }
