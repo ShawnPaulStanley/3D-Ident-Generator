@@ -73,35 +73,41 @@ function addBar(triangles, left, bottom, right, top) {
 // Builds the default USM logo from explicit 2D coordinates before extrusion.
 function usmToTriangles() {
     const triangles = [];
-    const stroke = 0.16;
+    // Varsity-inspired proportions.
+    const stroke = 0.19;
     const top = 0.72;
     const bottom = -0.72;
     const middle = 0;
-    const letterWidth = 0.68;
-    const gap = 0.24;
+    const letterWidth = 0.76;
+    const gap = 0.17;
     const start = -((letterWidth * 3) + (gap * 2)) / 2;
     const x = index => start + index * (letterWidth + gap);
-
     const half = stroke / 2;
 
-    addBar(triangles, x(0), bottom, x(0) + stroke, top - half);
-    addBar(triangles, x(0) + letterWidth - stroke, bottom, x(0) + letterWidth, top - half);
-    addBar(triangles, x(0) + half, bottom, x(0) + letterWidth - half, bottom + stroke);
-    addStroke(triangles, x(0), top - half, x(0) + half, top, stroke);
-    addStroke(triangles, x(0) + letterWidth - half, top, x(0) + letterWidth, top - half, stroke);
+    const ux = x(0);
+    addBar(triangles, ux, bottom, ux + stroke, top - 0.08);
+    addBar(triangles, ux + letterWidth - stroke, bottom, ux + letterWidth, top - 0.08);
+    addBar(triangles, ux + half, bottom, ux + letterWidth - half, bottom + stroke);
+    addStroke(triangles, ux, top - 0.08, ux + half, top, stroke);
+    addStroke(triangles, ux + letterWidth - half, top, ux + letterWidth, top - 0.08, stroke);
 
-    addBar(triangles, x(1) + half, top - stroke, x(1) + letterWidth - half, top);
-    addBar(triangles, x(1), top - half, x(1) + stroke, middle + half);
-    addBar(triangles, x(1) + half, middle - half, x(1) + letterWidth - half, middle + half);
-    addBar(triangles, x(1) + letterWidth - stroke, middle - half, x(1) + letterWidth, bottom + half);
-    addBar(triangles, x(1) + half, bottom, x(1) + letterWidth - half, bottom + stroke);
-    addStroke(triangles, x(1), top - half, x(1) + half, top - stroke, stroke);
-    addStroke(triangles, x(1) + letterWidth - half, bottom + stroke, x(1) + letterWidth, bottom + half, stroke);
+    const sx = x(1);
+    addBar(triangles, sx + half, top - stroke, sx + letterWidth - half, top);
+    addBar(triangles, sx, top - half, sx + stroke, middle + 0.08);
+    addBar(triangles, sx + half, middle - half, sx + letterWidth - half, middle + half);
+    addBar(triangles, sx + letterWidth - stroke, middle - 0.08, sx + letterWidth, bottom + half);
+    addBar(triangles, sx + half, bottom, sx + letterWidth - half, bottom + stroke);
+    addStroke(triangles, sx + stroke, middle + 0.08, sx + half, top - stroke, stroke);
+    addStroke(triangles, sx + letterWidth - half, bottom + stroke, sx + letterWidth, middle - 0.08, stroke);
 
-    addBar(triangles, x(2), bottom, x(2) + stroke, top - half);
-    addBar(triangles, x(2) + letterWidth - stroke, bottom, x(2) + letterWidth, top - half);
-    addStroke(triangles, x(2) + half, top, x(2) + letterWidth / 2, middle + 0.08, stroke);
-    addStroke(triangles, x(2) + letterWidth / 2, middle + 0.08, x(2) + letterWidth - half, top, stroke);
+    const mx = x(2);
+    const valley = bottom + 0.58;
+    addBar(triangles, mx, bottom, mx + stroke, top - 0.08);
+    addBar(triangles, mx + letterWidth - stroke, bottom, mx + letterWidth, top - 0.08);
+    addStroke(triangles, mx + half, top, mx + letterWidth / 2, valley, stroke);
+    addStroke(triangles, mx + letterWidth / 2, valley, mx + letterWidth - half, top, stroke);
+    addStroke(triangles, mx, top - 0.08, mx + half, top, stroke);
+    addStroke(triangles, mx + letterWidth - half, top, mx + letterWidth, top - 0.08, stroke);
 
     return new Float32Array(triangles);
 }
