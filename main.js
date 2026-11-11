@@ -332,9 +332,6 @@ function draw(time) {
 
 // Enables hidden-surface removal for the 3D mesh.
 gl.enable(gl.DEPTH_TEST);
-// Separates overlapping coplanar logo bars to prevent depth-buffer flicker.
-gl.enable(gl.POLYGON_OFFSET_FILL);
-gl.polygonOffset(-1, -1);
 
 // Restarts when the user chooses a different animation mode.
 animationInput.addEventListener("change", () => {

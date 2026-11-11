@@ -32,10 +32,6 @@ function extrude2D(vertices2D, depth, baseColor) {
     const frontColor = scaleColor(baseColor, 1.0);
     // Darkens the rear face to show depth.
     const backColor = scaleColor(baseColor, 0.62);
-    // Darkens the side faces to create a simple 3D shading effect.
-    const sideColor = scaleColor(baseColor, 0.38);
-    // Tracks shared edges so only outer edges receive side faces.
-    const edges = new Map();
 
     // Appends one triangle and its repeated colour values to the mesh arrays.
     function addTriangle(vertices, color) {
@@ -63,11 +59,6 @@ function extrude2D(vertices2D, depth, baseColor) {
         }
     }
 
-    // Creates a stable string key for matching nearby 2D edge endpoints.
-    function key(x, y) {
-        return `${Math.round(x * 100000)},${Math.round(y * 100000)}`;
-    }
-
     // Reads each group of six values as one 2D triangle.
     for (let i = 0; i < vertices2D.length; i += 6) {
         // Stores the triangle's three 2D points.
@@ -89,41 +80,9 @@ function extrude2D(vertices2D, depth, baseColor) {
             b[0], b[1], -z
         ], backColor);
 
-        // Records each triangle edge for boundary detection.
-        for (const [p, q] of [[a, b], [b, c], [c, a]]) {
-            const kp = key(p[0], p[1]);
-            const kq = key(q[0], q[1]);
-            const edgeKey = kp < kq ? `${kp}|${kq}` : `${kq}|${kp}`;
-
-            if (!edges.has(edgeKey)) {
-                edges.set(edgeKey, { a: p, b: q, count: 1 });
-            } else {
-                edges.get(edgeKey).count++;
-            }
-        }
     }
 
-    // Builds side faces only for edges used by one triangle.
-    for (const edge of edges.values()) {
-        if (edge.count !== 1) continue;
-
-        const a = edge.a;
-        const b = edge.b;
-        // Adds the first side triangle.
-        addTriangle([
-            a[0], a[1], z,
-            b[0], b[1], z,
-            a[0], a[1], -z
-        ], sideColor);
-        // Adds the second side triangle to complete the rectangular wall.
-        addTriangle([
-            a[0], a[1], -z,
-            b[0], b[1], z,
-            b[0], b[1], -z
-        ], sideColor);
-    }
-
-    // Returns typed arrays suitable for WebGL buffer uploads.
+    // Returns clean front and back surfaces without internal seam walls.
     return {
         positions: new Float32Array(positions),
         colors: new Float32Array(colors),
