@@ -8,37 +8,161 @@ function hexToRgb(hex) {
 }
 
 function scaleColor(color, amount) {
-    return [color[0] * amount, color[1] * amount, color[2] * amount, 1];
+    return [
+        color[0] * amount,
+        color[1] * amount,
+        color[2] * amount,
+        1
+    ];
 }
 
-// Extrudes a list of 2D triangles into front, back and side faces.
+function polygonArea(points) {
+    let area = 0;
+
+    for (let i = 0; i < points.length; i++) {
+        const a = points[i];
+        const b = points[(i + 1) % points.length];
+        area += a[0] * b[1] - b[0] * a[1];
+    }
+
+    return area / 2;
+}
+
+function cross(a, b, c) {
+    return (
+        (b[0] - a[0]) * (c[1] - a[1]) -
+        (b[1] - a[1]) * (c[0] - a[0])
+    );
+}
+
+function pointInTriangle(p, a, b, c) {
+    const d1 = cross(p, a, b);
+    const d2 = cross(p, b, c);
+    const d3 = cross(p, c, a);
+
+    const hasNegative = d1 < -1e-8 || d2 < -1e-8 || d3 < -1e-8;
+    const hasPositive = d1 > 1e-8 || d2 > 1e-8 || d3 > 1e-8;
+
+    return !(hasNegative && hasPositive);
+}
+
+function triangulatePolygon(points) {
+    const vertices = points.map((_, i) => i);
+    const triangles = [];
+    const orientation = polygonArea(points) > 0 ? 1 : -1;
+    let guard = 0;
+
+    while (vertices.length > 3 && guard++ < 1000) {
+        let foundEar = false;
+
+        for (let i = 0; i < vertices.length; i++) {
+            const prev = vertices[(i - 1 + vertices.length) % vertices.length];
+            const curr = vertices[i];
+            const next = vertices[(i + 1) % vertices.length];
+            const a = points[prev];
+            const b = points[curr];
+            const c = points[next];
+
+            if (cross(a, b, c) * orientation <= 1e-8) continue;
+
+            let containsPoint = false;
+            for (const index of vertices) {
+                if (index === prev || index === curr || index === next) continue;
+                if (pointInTriangle(points[index], a, b, c)) {
+                    containsPoint = true;
+                    break;
+                }
+            }
+
+            if (containsPoint) continue;
+
+            triangles.push(
+                a[0], a[1],
+                b[0], b[1],
+                c[0], c[1]
+            );
+            vertices.splice(i, 1);
+            foundEar = true;
+            break;
+        }
+
+        if (!foundEar) {
+            throw new Error("Polygon triangulation failed. Check letter outline.");
+        }
+    }
+
+    if (vertices.length === 3) {
+        for (const index of vertices) {
+            triangles.push(points[index][0], points[index][1]);
+        }
+    }
+
+    return triangles;
+}
+
 function extrude2D(vertices2D, depth, baseColor) {
     const z = depth / 2;
     const positions = [];
     const colors = [];
-    const frontColor = scaleColor(baseColor, 1);
+    const frontColor = scaleColor(baseColor, 1.0);
     const backColor = scaleColor(baseColor, 0.62);
-    const sideColor = scaleColor(baseColor, 0.4);
+    const sideColor = scaleColor(baseColor, 0.38);
+    const edges = new Map();
 
     function addTriangle(vertices, color) {
         positions.push(...vertices);
         for (let i = 0; i < 3; i++) colors.push(...color);
     }
 
+    function key(x, y) {
+        return `${Math.round(x * 100000)},${Math.round(y * 100000)}`;
+    }
+
     for (let i = 0; i < vertices2D.length; i += 6) {
-        const x1 = vertices2D[i], y1 = vertices2D[i + 1];
-        const x2 = vertices2D[i + 2], y2 = vertices2D[i + 3];
-        const x3 = vertices2D[i + 4], y3 = vertices2D[i + 5];
+        const a = [vertices2D[i], vertices2D[i + 1]];
+        const b = [vertices2D[i + 2], vertices2D[i + 3]];
+        const c = [vertices2D[i + 4], vertices2D[i + 5]];
 
-        addTriangle([x1, y1, z, x2, y2, z, x3, y3, z], frontColor);
-        addTriangle([x1, y1, -z, x3, y3, -z, x2, y2, -z], backColor);
+        addTriangle([
+            a[0], a[1], z,
+            b[0], b[1], z,
+            c[0], c[1], z
+        ], frontColor);
 
-        addTriangle([x1, y1, z, x2, y2, z, x1, y1, -z], sideColor);
-        addTriangle([x1, y1, -z, x2, y2, z, x2, y2, -z], sideColor);
-        addTriangle([x2, y2, z, x3, y3, z, x2, y2, -z], sideColor);
-        addTriangle([x2, y2, -z, x3, y3, z, x3, y3, -z], sideColor);
-        addTriangle([x3, y3, z, x1, y1, z, x3, y3, -z], sideColor);
-        addTriangle([x3, y3, -z, x1, y1, z, x1, y1, -z], sideColor);
+        addTriangle([
+            a[0], a[1], -z,
+            c[0], c[1], -z,
+            b[0], b[1], -z
+        ], backColor);
+
+        for (const [p, q] of [[a, b], [b, c], [c, a]]) {
+            const kp = key(p[0], p[1]);
+            const kq = key(q[0], q[1]);
+            const edgeKey = kp < kq ? `${kp}|${kq}` : `${kq}|${kp}`;
+
+            if (!edges.has(edgeKey)) {
+                edges.set(edgeKey, { a: p, b: q, count: 1 });
+            } else {
+                edges.get(edgeKey).count++;
+            }
+        }
+    }
+
+    for (const edge of edges.values()) {
+        if (edge.count !== 1) continue;
+
+        const a = edge.a;
+        const b = edge.b;
+        addTriangle([
+            a[0], a[1], z,
+            b[0], b[1], z,
+            a[0], a[1], -z
+        ], sideColor);
+        addTriangle([
+            a[0], a[1], -z,
+            b[0], b[1], z,
+            b[0], b[1], -z
+        ], sideColor);
     }
 
     return {
@@ -47,67 +171,74 @@ function extrude2D(vertices2D, depth, baseColor) {
     };
 }
 
-function addStroke(triangles, x1, y1, x2, y2, width) {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const length = Math.hypot(dx, dy);
-    const offsetX = (dy / length) * width / 2;
-    const offsetY = (dx / length) * width / 2;
-    triangles.push(
-        x1 - offsetX, y1 + offsetY,
-        x2 - offsetX, y2 + offsetY,
-        x1 + offsetX, y1 - offsetY,
-        x1 + offsetX, y1 - offsetY,
-        x2 - offsetX, y2 + offsetY,
-        x2 + offsetX, y2 - offsetY
-    );
-}
-
-function addBar(triangles, left, bottom, right, top) {
-    triangles.push(
-        left, top, right, top, left, bottom,
-        left, bottom, right, top, right, bottom
-    );
-}
-
-// Builds the default USM logo from explicit 2D coordinates before extrusion.
 function usmToTriangles() {
     const triangles = [];
-    // Varsity-inspired proportions.
-    const stroke = 0.19;
-    const top = 0.72;
-    const bottom = -0.72;
-    const middle = 0;
-    const letterWidth = 0.76;
-    const gap = 0.17;
-    const start = -((letterWidth * 3) + (gap * 2)) / 2;
-    const x = index => start + index * (letterWidth + gap);
-    const half = stroke / 2;
+    const W = 0.76;
+    const H = 1.44;
+    const T = 0.19;
+    const GAP = 0.17;
+    const bottom = -H / 2;
+    const top = H / 2;
+    const totalWidth = W * 3 + GAP * 2;
+    const start = -totalWidth / 2;
+    const X = i => start + i * (W + GAP);
 
-    const ux = x(0);
-    addBar(triangles, ux, bottom, ux + stroke, top - 0.08);
-    addBar(triangles, ux + letterWidth - stroke, bottom, ux + letterWidth, top - 0.08);
-    addBar(triangles, ux + half, bottom, ux + letterWidth - half, bottom + stroke);
-    addStroke(triangles, ux, top - 0.08, ux + half, top, stroke);
-    addStroke(triangles, ux + letterWidth - half, top, ux + letterWidth, top - 0.08, stroke);
+    const ux = X(0);
+    const U = [
+        [ux, bottom],
+        [ux, top - 0.12],
+        [ux + 0.12, top],
+        [ux + 0.28, top - 0.12],
+        [ux + T, top - 0.12],
+        [ux + T, bottom + T],
+        [ux + W - T, bottom + T],
+        [ux + W - T, top - 0.12],
+        [ux + W - 0.28, top],
+        [ux + W - 0.12, top - 0.12],
+        [ux + W, top - 0.12],
+        [ux + W, bottom]
+    ];
+    triangles.push(...triangulatePolygon(U));
 
-    const sx = x(1);
-    addBar(triangles, sx + half, top - stroke, sx + letterWidth - half, top);
-    addBar(triangles, sx, top - half, sx + stroke, middle + 0.08);
-    addBar(triangles, sx + half, middle - half, sx + letterWidth - half, middle + half);
-    addBar(triangles, sx + letterWidth - stroke, middle - 0.08, sx + letterWidth, bottom + half);
-    addBar(triangles, sx + half, bottom, sx + letterWidth - half, bottom + stroke);
-    addStroke(triangles, sx + stroke, middle + 0.08, sx + half, top - stroke, stroke);
-    addStroke(triangles, sx + letterWidth - half, bottom + stroke, sx + letterWidth, middle - 0.08, stroke);
+    const sx = X(1);
+    const S = [
+        [sx, top],
+        [sx + W, top],
+        [sx + W, top - T],
+        [sx + T, top - T],
+        [sx + T, T / 2],
+        [sx + W, T / 2],
+        [sx + W, -T / 2],
+        [sx + W - T, -T / 2],
+        [sx + W - T, bottom + T],
+        [sx + W, bottom + T],
+        [sx + W, bottom],
+        [sx, bottom],
+        [sx, -T / 2],
+        [sx + T, -T / 2],
+        [sx + T, T / 2],
+        [sx, T / 2]
+    ];
+    triangles.push(...triangulatePolygon(S));
 
-    const mx = x(2);
-    const valley = bottom + 0.58;
-    addBar(triangles, mx, bottom, mx + stroke, top - 0.08);
-    addBar(triangles, mx + letterWidth - stroke, bottom, mx + letterWidth, top - 0.08);
-    addStroke(triangles, mx + half, top, mx + letterWidth / 2, valley, stroke);
-    addStroke(triangles, mx + letterWidth / 2, valley, mx + letterWidth - half, top, stroke);
-    addStroke(triangles, mx, top - 0.08, mx + half, top, stroke);
-    addStroke(triangles, mx + letterWidth - half, top, mx + letterWidth, top - 0.08, stroke);
+    const mx = X(2);
+    const M = [
+        [mx, bottom],
+        [mx + T, bottom],
+        [mx + T, top],
+        [mx + W / 2, bottom + 0.55],
+        [mx + W - T, top],
+        [mx + W - T, bottom],
+        [mx + W, bottom],
+        [mx + W, top - 0.12],
+        [mx + W - 0.12, top],
+        [mx + W - 0.28, top - 0.12],
+        [mx + W / 2, bottom + 0.88],
+        [mx + 0.28, top - 0.12],
+        [mx + 0.12, top],
+        [mx, top - 0.12]
+    ];
+    triangles.push(...triangulatePolygon(M));
 
     return new Float32Array(triangles);
 }
