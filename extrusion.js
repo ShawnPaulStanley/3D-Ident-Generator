@@ -73,6 +73,8 @@ function usmToTriangles() {
     const gap = 0.22;
     const start = -((letterWidth * 3) + (gap * 2)) / 2;
     const x = index => start + index * (letterWidth + gap);
+    const mTop = top + 0.1;
+    const mBottom = bottom - 0.1;
 
     addStroke(triangles, x(0), top - 0.1, x(0), bottom, stroke);
     addStroke(triangles, x(0), top - 0.1, x(0) + 0.1, top, stroke);
@@ -90,10 +92,10 @@ function usmToTriangles() {
     addStroke(triangles, x(1) + letterWidth, bottom + 0.1, x(1) + letterWidth - 0.1, bottom, stroke);
     addStroke(triangles, x(1) + letterWidth - 0.1, bottom, x(1), bottom, stroke);
 
-    addStroke(triangles, x(2), bottom, x(2), top, stroke);
-    addStroke(triangles, x(2), top, x(2) + letterWidth / 2, 0.05, stroke);
-    addStroke(triangles, x(2) + letterWidth / 2, 0.05, x(2) + letterWidth, top, stroke);
-    addStroke(triangles, x(2) + letterWidth, top, x(2) + letterWidth, bottom, stroke);
+    addStroke(triangles, x(2), mBottom, x(2), mTop, stroke);
+    addStroke(triangles, x(2), mTop, x(2) + letterWidth / 2, 0.05, stroke);
+    addStroke(triangles, x(2) + letterWidth / 2, 0.05, x(2) + letterWidth, mTop, stroke);
+    addStroke(triangles, x(2) + letterWidth, mTop, x(2) + letterWidth, mBottom, stroke);
 
     return new Float32Array(triangles);
 }
