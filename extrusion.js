@@ -149,9 +149,9 @@ function usmToTriangles() {
     const sx = X(1);
     const half = T / 2;
     addRectangleTriangles(triangles, sx, top - T, sx + W, top);
-    addRectangleTriangles(triangles, sx, top - T, sx + T, middle + half);
+    addRectangleTriangles(triangles, sx + W - T, top - T, sx + W, middle + half);
     addRectangleTriangles(triangles, sx, middle - half, sx + W, middle + half);
-    addRectangleTriangles(triangles, sx + W - T, bottom + half, sx + W, middle + half);
+    addRectangleTriangles(triangles, sx, bottom + half, sx + T, middle - half);
     addRectangleTriangles(triangles, sx, bottom, sx + W, bottom + T);
     addSegmentTriangles(triangles, sx, top - T, sx + half, top, T);
     addSegmentTriangles(triangles, sx + W - half, bottom + T, sx + W, bottom + half, T);
