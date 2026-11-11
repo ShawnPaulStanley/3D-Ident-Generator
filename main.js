@@ -54,6 +54,7 @@ const positionBuffer = gl.createBuffer();
 const colorBuffer = gl.createBuffer();
 
 const textInput = document.getElementById("textInput");
+const animationInput = document.getElementById("animationInput");
 const colorInput = document.getElementById("colorInput");
 const depthInput = document.getElementById("depthInput");
 const speedInput = document.getElementById("speedInput");
@@ -72,12 +73,15 @@ let sequenceTime = 0;
 let lastTime = 0;
 let paused = false;
 let speed = Number(speedInput.value);
+let selectedAnimation = "all";
 const phases = [
-    { duration: 1.5, startRotation: 0, endRotation: Math.PI, startScale: 1, endScale: 1 },
-    { duration: 1.5, startRotation: Math.PI, endRotation: 0, startScale: 1, endScale: 1 },
-    { duration: 1.5, startRotation: 0, endRotation: -Math.PI, startScale: 1, endScale: 1 },
-    { duration: 1.5, startRotation: -Math.PI, endRotation: 0, startScale: 1, endScale: 1 },
-    { duration: 2.5, startRotation: 0, endRotation: 0, startScale: 1, endScale: 1.8 }
+    { name: "right", duration: 1.5, startRotation: 0, endRotation: Math.PI, startScale: 1, endScale: 1 },
+    { name: "rightReturn", duration: 1.5, startRotation: Math.PI, endRotation: 0, startScale: 1, endScale: 1 },
+    { name: "left", duration: 1.5, startRotation: 0, endRotation: -Math.PI, startScale: 1, endScale: 1 },
+    { name: "leftReturn", duration: 1.5, startRotation: -Math.PI, endRotation: 0, startScale: 1, endScale: 1 },
+    { name: "scale", duration: 2.5, startRotation: 0, endRotation: 0, startScale: 1, endScale: 1.8 },
+    { name: "move", duration: 2 * Math.PI / 0.8, startRotation: 0, endRotation: 0, startScale: 1.8, endScale: 1.8 },
+    { name: "scaleDown", duration: 2.5, startRotation: 2 * Math.PI, endRotation: 2 * Math.PI, startScale: 1.8, endScale: 1 }
 ];
 const sequenceDuration = phases.reduce((total, phase) => total + phase.duration, 0);
 
@@ -140,27 +144,44 @@ function resetAnimation() {
     playButton.textContent = "Pause";
 }
 
+function interpolatePhase(phase, time) {
+    const progress = easeInOut(Math.min(time / phase.duration, 1));
+    return {
+        rotation: phase.startRotation + (phase.endRotation - phase.startRotation) * progress,
+        scale: phase.startScale + (phase.endScale - phase.startScale) * progress,
+        x: 0,
+        y: 0
+    };
+}
+
+function getMovementTransform(time) {
+    return {
+        rotation: time * 0.8,
+        rotationX: Math.sin(time * 0.4) * 0.25,
+        scale: 1.8,
+        x: Math.cos(time * 0.8) * 0.1,
+        y: Math.sin(time * 0.8) * 0.08
+    };
+}
+
 function getSequenceTransform() {
-    if (sequenceTime >= sequenceDuration) {
-        const movementTime = sequenceTime - sequenceDuration;
-        return {
-            rotation: Math.sin(movementTime * 0.9) * 0.35,
-            scale: 1.8,
-            x: Math.cos(movementTime * 0.7) * 0.08,
-            y: Math.sin(movementTime * 1.1) * 0.08
-        };
+    if (selectedAnimation === "move") {
+        return getMovementTransform(sequenceTime);
     }
 
-    let remaining = sequenceTime;
+    if (selectedAnimation !== "all") {
+        const phase = phases.find(item => item.name === selectedAnimation);
+        return interpolatePhase(phase, sequenceTime % phase.duration);
+    }
+
+    const cycleTime = sequenceTime % sequenceDuration;
+    let remaining = cycleTime;
     for (const phase of phases) {
         if (remaining <= phase.duration) {
-            const progress = easeInOut(remaining / phase.duration);
-            return {
-                rotation: phase.startRotation + (phase.endRotation - phase.startRotation) * progress,
-                scale: phase.startScale + (phase.endScale - phase.startScale) * progress,
-                x: 0,
-                y: 0
-            };
+            if (phase.name === "move") {
+                return getMovementTransform(remaining);
+            }
+            return interpolatePhase(phase, remaining);
         }
         remaining -= phase.duration;
     }
@@ -193,7 +214,7 @@ function draw(time) {
         : new Float32Array([1, 0, 0, 0, 0, aspect, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     const model = multiply(
         translation(transform.x, transform.y, 0),
-        multiply(scaling(transform.scale), multiply(rotationY(transform.rotation), rotationX(0)))
+        multiply(scaling(transform.scale), multiply(rotationY(transform.rotation), rotationX(transform.rotationX || 0)))
     );
     const matrix = multiply(aspectMatrix, model);
 
@@ -212,11 +233,14 @@ function draw(time) {
 }
 
 gl.enable(gl.DEPTH_TEST);
-gl.enable(gl.CULL_FACE);
 
 textInput.addEventListener("input", () => {
     settings.text = textInput.value.trim() || "USM";
     rebuildMesh();
+});
+animationInput.addEventListener("change", () => {
+    selectedAnimation = animationInput.value;
+    resetAnimation();
 });
 colorInput.addEventListener("input", () => {
     settings.color = colorInput.value;

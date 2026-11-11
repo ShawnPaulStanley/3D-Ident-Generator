@@ -27,13 +27,15 @@ body {
 
 .controls {
     position: absolute;
-    left: 1.25rem;
+    left: 50%;
     bottom: 1.25rem;
+    transform: translateX(-50%);
     display: flex;
     flex-wrap: wrap;
     align-items: end;
     gap: 0.8rem;
-    max-width: calc(100% - 2.5rem);
+    width: min(94vw, 58rem);
+    justify-content: center;
     padding: 1rem;
     border: 1px solid rgba(255,255,255,.14);
     border-radius: 0.85rem;
@@ -83,7 +85,13 @@ button:hover { background: #21364a; }
 .buttons { display: flex; gap: .5rem; }
 
 @media (max-width: 620px) {
-    .controls { left: .65rem; right: .65rem; bottom: .65rem; max-width: none; }
+    .controls {
+        left: .65rem;
+        right: .65rem;
+        bottom: .65rem;
+        transform: none;
+        width: auto;
+    }
     .buttons { width: 100%; }
     button { flex: 1; }
 }
