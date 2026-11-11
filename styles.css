@@ -1,0 +1,89 @@
+:root {
+    color-scheme: dark;
+    font-family: Inter, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-width: 320px;
+    background: #07080b;
+    color: #eef7ff;
+}
+
+.app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#glCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.controls {
+    position: absolute;
+    left: 1.25rem;
+    bottom: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.8rem;
+    max-width: calc(100% - 2.5rem);
+    padding: 1rem;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 0.85rem;
+    background: rgba(15, 20, 28, .82);
+    backdrop-filter: blur(12px);
+}
+
+label {
+    display: grid;
+    gap: .3rem;
+    color: #b6c4d2;
+    font-size: .75rem;
+}
+
+input[type="text"] {
+    width: 8rem;
+    padding: .45rem .55rem;
+    border: 1px solid #3c5267;
+    border-radius: .35rem;
+    background: #101923;
+    color: white;
+}
+
+select {
+    min-width: 9rem;
+    padding: .45rem .55rem;
+    border: 1px solid #3c5267;
+    border-radius: .35rem;
+    background: #101923;
+    color: white;
+}
+
+input[type="range"] { accent-color: #00c8ff; }
+input[type="color"] { width: 3rem; height: 2rem; padding: 0; border: 0; }
+output { color: #e7f8ff; font-variant-numeric: tabular-nums; }
+
+button {
+    padding: .55rem .75rem;
+    border: 1px solid #3c5267;
+    border-radius: .35rem;
+    background: #172433;
+    color: #eef7ff;
+    cursor: pointer;
+}
+
+button:hover { background: #21364a; }
+.buttons { display: flex; gap: .5rem; }
+
+@media (max-width: 620px) {
+    .controls { left: .65rem; right: .65rem; bottom: .65rem; max-width: none; }
+    .buttons { width: 100%; }
+    button { flex: 1; }
+}

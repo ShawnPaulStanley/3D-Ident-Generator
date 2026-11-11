@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL 3D Text Animation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="app">
+        <canvas id="glCanvas" aria-label="Animated 3D text"></canvas>
+        <section class="controls" aria-label="Animation controls">
+            <label>
+                Text
+                <input id="textInput" type="text" value="LAG" maxlength="12">
+            </label>
+            <label>
+                Animation
+                <select id="animationInput">
+                    <option value="all">Full sequence</option>
+                    <option value="y">Y rotation</option>
+                    <option value="x">X rotation</option>
+                    <option value="z">Z rotation</option>
+                    <option value="combined">Combined rotation</option>
+                    <option value="tilt">Tilt and wobble</option>
+                    <option value="orbit">Orbit</option>
+                    <option value="bounce">Bounce and pulse</option>
+                    <option value="scale">Zoom in and out</option>
+                </select>
+            </label>
+            <label>
+                Colour
+                <input id="colorInput" type="color" value="#00ccff">
+            </label>
+            <label>
+                Depth
+                <input id="depthInput" type="range" min="0.05" max="0.8" step="0.01" value="0.2">
+                <output id="depthValue">0.20</output>
+            </label>
+            <label>
+                Speed
+                <input id="speedInput" type="range" min="0.25" max="3" step="0.05" value="1">
+                <output id="speedValue">1.00x</output>
+            </label>
+            <div class="buttons">
+                <button id="playButton" type="button">Pause</button>
+                <button id="restartButton" type="button">Restart</button>
+                <button id="fullscreenButton" type="button">Fullscreen</button>
+            </div>
+        </section>
+    </main>
+    <script src="extrusion.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
