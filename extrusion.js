@@ -66,23 +66,29 @@ function addStroke(triangles, x1, y1, x2, y2, width) {
 // Builds the default USM logo from explicit 2D coordinates before extrusion.
 function usmToTriangles() {
     const triangles = [];
-    const stroke = 0.16;
-    const top = 0.72;
-    const bottom = -0.72;
-    const letterWidth = 0.74;
-    const gap = 0.18;
+    const stroke = 0.14;
+    const top = 0.68;
+    const bottom = -0.68;
+    const letterWidth = 0.66;
+    const gap = 0.22;
     const start = -((letterWidth * 3) + (gap * 2)) / 2;
     const x = index => start + index * (letterWidth + gap);
 
-    addStroke(triangles, x(0), top, x(0), bottom + stroke / 2, stroke);
+    addStroke(triangles, x(0), top - 0.1, x(0), bottom, stroke);
+    addStroke(triangles, x(0), top - 0.1, x(0) + 0.1, top, stroke);
     addStroke(triangles, x(0), bottom, x(0) + letterWidth, bottom, stroke);
-    addStroke(triangles, x(0) + letterWidth, bottom, x(0) + letterWidth, top, stroke);
+    addStroke(triangles, x(0) + letterWidth, bottom, x(0) + letterWidth, top - 0.1, stroke);
+    addStroke(triangles, x(0) + letterWidth - 0.1, top, x(0) + letterWidth, top - 0.1, stroke);
 
-    addStroke(triangles, x(1) + letterWidth, top, x(1), top, stroke);
-    addStroke(triangles, x(1), top, x(1), 0, stroke);
-    addStroke(triangles, x(1), 0, x(1) + letterWidth, 0, stroke);
-    addStroke(triangles, x(1) + letterWidth, 0, x(1) + letterWidth, bottom, stroke);
-    addStroke(triangles, x(1) + letterWidth, bottom, x(1), bottom, stroke);
+    addStroke(triangles, x(1) + letterWidth, top, x(1) + 0.1, top, stroke);
+    addStroke(triangles, x(1) + 0.1, top, x(1), top - 0.1, stroke);
+    addStroke(triangles, x(1), top - 0.1, x(1), 0.1, stroke);
+    addStroke(triangles, x(1), 0.1, x(1) + 0.1, 0, stroke);
+    addStroke(triangles, x(1) + 0.1, 0, x(1) + letterWidth - 0.1, 0, stroke);
+    addStroke(triangles, x(1) + letterWidth - 0.1, 0, x(1) + letterWidth, -0.1, stroke);
+    addStroke(triangles, x(1) + letterWidth, -0.1, x(1) + letterWidth, bottom + 0.1, stroke);
+    addStroke(triangles, x(1) + letterWidth, bottom + 0.1, x(1) + letterWidth - 0.1, bottom, stroke);
+    addStroke(triangles, x(1) + letterWidth - 0.1, bottom, x(1), bottom, stroke);
 
     addStroke(triangles, x(2), bottom, x(2), top, stroke);
     addStroke(triangles, x(2), top, x(2) + letterWidth / 2, 0.05, stroke);
