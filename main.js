@@ -8,6 +8,9 @@ if (!gl) {
     throw new Error("WebGL is not supported in this browser.");
 }
 
+// Keeps the single key light fixed above and to the left of the logo.
+const LIGHT_DIRECTION = [-0.8, 0.45, 1.0];
+
 // Transforms vertex positions using the animation matrix.
 const vertexShaderSource = `
     attribute vec3 a_position;
@@ -40,7 +43,7 @@ const fragmentShaderSource = `
         vec3 halfDirection = normalize(light + viewDirection);
         float diffuse = max(dot(normal, light), 0.0);
         float specular = pow(max(dot(normal, halfDirection), 0.0), 48.0);
-        float lighting = 0.24 + diffuse * 0.62;
+        float lighting = 0.18 + diffuse * 0.68;
         vec3 glossyColor = v_color.rgb * lighting + vec3(1.0) * specular * 0.85;
         gl_FragColor = vec4(min(glossyColor, 1.0), v_color.a);
     }
@@ -316,7 +319,12 @@ function draw(time) {
     gl.useProgram(program);
     gl.uniformMatrix4fv(matrixLocation, false, matrix);
     gl.uniformMatrix4fv(modelLocation, false, model);
-    gl.uniform3f(lightDirectionLocation, -0.45, 0.7, 1.0);
+    gl.uniform3f(
+        lightDirectionLocation,
+        LIGHT_DIRECTION[0],
+        LIGHT_DIRECTION[1],
+        LIGHT_DIRECTION[2]
+    );
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
