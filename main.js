@@ -108,7 +108,8 @@ const phases = [
     { name: "leftReturn", duration: 1.5, startRotation: -Math.PI, endRotation: 0, startScale: 1, endScale: 1 },
     { name: "scale", duration: 2.5, startRotation: 0, endRotation: 0, startScale: 1, endScale: 1.8 },
     { name: "scaleDown", duration: 2.5, startRotation: 0, endRotation: 0, startScale: 1.8, endScale: 1.15 },
-    { name: "move", duration: 2 * Math.PI / 0.8, startRotation: 0, endRotation: 0, startScale: 1.15, endScale: 1.15 }
+    { name: "move", duration: 2 * Math.PI / 0.8, startRotation: 0, endRotation: 0, startScale: 1.15, endScale: 1.15 },
+    { name: "reset", duration: 1.5, startRotation: 2 * Math.PI, endRotation: 2 * Math.PI, startScale: 1.15, endScale: 1 }
 ];
 // Calculates the full duration of one main-sequence cycle.
 const sequenceDuration = phases.reduce((total, phase) => total + phase.duration, 0);
@@ -205,10 +206,26 @@ function getMovementTransform(time) {
     };
 }
 
+// Smoothly returns the logo to the centered starting state before looping.
+function getResetTransform(time) {
+    const progress = easeInOut(Math.min(time / 1.5, 1));
+    return {
+        rotation: 2 * Math.PI * progress,
+        rotationX: 0,
+        scale: 1.15 - 0.15 * progress,
+        x: 0.07 * (1 - progress),
+        y: 0.05 * (1 - progress)
+    };
+}
+
 // Chooses the transform for the selected phase or complete sequence.
 function getSequenceTransform() {
     if (selectedAnimation === "move") {
         return getMovementTransform(sequenceTime);
+    }
+
+    if (selectedAnimation === "reset") {
+        return getResetTransform(sequenceTime % 1.5);
     }
 
     if (selectedAnimation !== "all") {
@@ -222,6 +239,9 @@ function getSequenceTransform() {
         if (remaining <= phase.duration) {
             if (phase.name === "move") {
                 return getMovementTransform(remaining);
+            }
+            if (phase.name === "reset") {
+                return getResetTransform(remaining);
             }
             return interpolatePhase(phase, remaining);
         }
