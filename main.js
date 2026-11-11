@@ -14,21 +14,35 @@ const vertexShaderSource = `
     attribute vec4 a_color;
     attribute vec3 a_normal;
     uniform mat4 u_matrix;
+    uniform mat4 u_model;
     uniform vec3 u_lightDirection;
     varying vec4 v_color;
+    varying vec3 v_worldPosition;
+    varying vec3 v_worldNormal;
     void main() {
         gl_Position = u_matrix * vec4(a_position, 1.0);
-        float diffuse = max(dot(normalize(a_normal), normalize(u_lightDirection)), 0.0);
-        float lighting = 0.32 + diffuse * 0.68;
-        v_color = vec4(a_color.rgb * lighting, a_color.a);
+        v_worldPosition = (u_model * vec4(a_position, 1.0)).xyz;
+        v_worldNormal = normalize((u_model * vec4(a_normal, 0.0)).xyz);
+        v_color = a_color;
     }
 `;
 // Outputs the interpolated colour for each rendered fragment.
 const fragmentShaderSource = `
     precision mediump float;
     varying vec4 v_color;
+    varying vec3 v_worldPosition;
+    varying vec3 v_worldNormal;
+    uniform vec3 u_lightDirection;
     void main() {
-        gl_FragColor = v_color;
+        vec3 normal = normalize(v_worldNormal);
+        vec3 light = normalize(u_lightDirection);
+        vec3 viewDirection = normalize(-v_worldPosition);
+        vec3 halfDirection = normalize(light + viewDirection);
+        float diffuse = max(dot(normal, light), 0.0);
+        float specular = pow(max(dot(normal, halfDirection), 0.0), 48.0);
+        float lighting = 0.24 + diffuse * 0.62;
+        vec3 glossyColor = v_color.rgb * lighting + vec3(1.0) * specular * 0.85;
+        gl_FragColor = vec4(min(glossyColor, 1.0), v_color.a);
     }
 `;
 
@@ -65,6 +79,8 @@ const positionLocation = gl.getAttribLocation(program, "a_position");
 const colorLocation = gl.getAttribLocation(program, "a_color");
 // Finds the transformation-matrix uniform in the shader.
 const matrixLocation = gl.getUniformLocation(program, "u_matrix");
+// Finds the model transform used for lighting positions and normals.
+const modelLocation = gl.getUniformLocation(program, "u_model");
 // Finds the directional-light uniform in the shader.
 const lightDirectionLocation = gl.getUniformLocation(program, "u_lightDirection");
 // Finds the per-face normal attribute in the shader.
@@ -299,6 +315,7 @@ function draw(time) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(program);
     gl.uniformMatrix4fv(matrixLocation, false, matrix);
+    gl.uniformMatrix4fv(modelLocation, false, model);
     gl.uniform3f(lightDirectionLocation, -0.45, 0.7, 1.0);
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.enableVertexAttribArray(positionLocation);
@@ -315,6 +332,9 @@ function draw(time) {
 
 // Enables hidden-surface removal for the 3D mesh.
 gl.enable(gl.DEPTH_TEST);
+// Separates overlapping coplanar logo bars to prevent depth-buffer flicker.
+gl.enable(gl.POLYGON_OFFSET_FILL);
+gl.polygonOffset(-1, -1);
 
 // Restarts when the user chooses a different animation mode.
 animationInput.addEventListener("change", () => {
