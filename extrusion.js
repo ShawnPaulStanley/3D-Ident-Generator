@@ -186,12 +186,12 @@ function usmToTriangles() {
     const sx = X(1);
     const half = T / 2;
     addRectangleTriangles(triangles, sx, top - T, sx + W, top);
-    addRectangleTriangles(triangles, sx + W - T, middle, sx + W, top - T);
+    addRectangleTriangles(triangles, sx, middle, sx + T, top - T);
     addRectangleTriangles(triangles, sx, middle - half, sx + W, middle + half);
-    addRectangleTriangles(triangles, sx, bottom + T, sx + T, middle - half);
+    addRectangleTriangles(triangles, sx + W - T, bottom + T, sx + W, middle - half);
     addRectangleTriangles(triangles, sx, bottom, sx + W, bottom + T);
-    addSegmentTriangles(triangles, sx, top - T, sx + half, top, T);
-    addSegmentTriangles(triangles, sx + W - half, bottom + T, sx + W, bottom + half, T);
+    addSegmentTriangles(triangles, sx + W - half, top - T, sx + W, top, T);
+    addSegmentTriangles(triangles, sx, bottom + half, sx + half, bottom + T, T);
 
     // Builds the M from vertical legs and a deep central valley.
     const mx = X(2);
